@@ -3,38 +3,47 @@ const hre = require("hardhat");
 async function main() {
   console.log("Connected to network:", hre.network.name);
 
-  const bridgeContractAddress = "0xF9bc4a80464E48369303196645e876c8C7D972de"; 
-  const myNFTContractAddress = "0x1b7295097e0aDaCe903D0c2f820A6f83594806f9"; 
+  const bridgeAddress = "0xF9bc4a80464E48369303196645e876c8C7D972de";
+  const fxPortalAddress = "0x1234567890123456789012345678901234567890"; 
+  const uniqueSingerAddress = "0x34afE2CF6DB448a1254D9c3cF4C93794671e2ed1";
 
-  const MyNFTContract = await hre.ethers.getContractFactory("MyNFTContract");
-  const myNFTContract = await MyNFTContract.attach(myNFTContractAddress);
-  console.log("MyNFTContract address:", myNFTContract.address);
+  const UniqueSingerNFT = await hre.ethers.getContractFactory("MyNFTContract");
+  const uniqueSingerContract = await UniqueSingerNFT.attach(uniqueSingerAddress);
+  console.log("Contract address:", uniqueSingerContract.address);
 
-  // Token IDs of the NFTs to be sent
   const tokenIds = [1, 2, 3, 4, 5];
-  const recipientWallet = "0xaf0AFe12e31a59C845064A9ffd6AcB5f073bCb43"; // Recipient's wallet address
-  let nftCount = 0; 
+  const wallet = "0xaf0AFe12e31a59C845064A9ffd6AcB5f073bCb43"; // Wallet address
 
-  // Set a higher gas limit for the transactions
   const overrides = { gasLimit: 1000000 }; // Adjust the gas limit value as needed
 
-  // Approve and deposit each token to the FxPortal Bridge for sending
+  // Loop through each token ID and approve, deposit, and withdraw the NFT
   for (let i = 0; i < tokenIds.length; i++) {
     const tokenId = tokenIds[i];
-    console.log(`Approving token transfer for token ID ${tokenId}`);
-    await myNFTContract.approve(bridgeContractAddress, tokenId, overrides);
+    console.log(`Confirm token with token ID ${tokenId} for transfer`);
+    
+    // Approve the FxPortal Bridge 
+    await uniqueSingerContract.approve(bridgeAddress, tokenId, overrides);
 
-    console.log(`Transferring token with token ID ${tokenId} to the Bridge`); // FxPortal Bridge
-    await myNFTContract["safeTransferFrom(address,address,uint256)"](recipientWallet, bridgeContractAddress, tokenId, overrides);
+    // Deposit the NFT to the FxPortal Bridge
+    console.log(`Deposit token with token ID ${tokenId} to the FxPortal`); // FxPortal Bridge
+    await depositToFxPortal(fxPortalAddress, uniqueSingerAddress, tokenId, overrides);
 
-    nftCount++;
+    // Withdraw the NFT from the FxPortal Bridge 
+    console.log(`Withdraw token with token ID ${tokenId} from the FxPortal`); // FxPortal Bridge
+    await withdrawFromFxPortal(fxPortalAddress, uniqueSingerAddress, wallet, tokenId, overrides);
   }
+  
   console.log("Transfer of tokens executed completely");
-  console.log(`Total tokens transferred to the bridge: ${nftCount}`);
+}
 
-  // Print the balance of the recipient's wallet
-  const recipientWalletBalance = await hre.ethers.provider.getBalance(recipientWallet);
-  console.log("Balance of recipient's wallet", recipientWallet, "is:", recipientWalletBalance.toString());
+async function depositToFxPortal(fxPortalAddress, tokenContractAddress, tokenId, overrides) {
+  const FxPortal = await hre.ethers.getContractAt("FxPortal", fxPortalAddress);
+  await FxPortal.depositERC721(tokenContractAddress, tokenId, overrides);
+}
+
+async function withdrawFromFxPortal(fxPortalAddress, tokenContractAddress, toAddress, tokenId, overrides) {
+  const FxPortal = await hre.ethers.getContractAt("FxPortal", fxPortalAddress);
+  await FxPortal.withdrawERC721(tokenContractAddress, tokenId, toAddress, overrides);
 }
 
 main()
