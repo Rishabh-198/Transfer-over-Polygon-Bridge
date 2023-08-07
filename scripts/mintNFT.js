@@ -1,16 +1,15 @@
 const hre = require("hardhat");
 
-// Define the main function as an async function separately
 async function main() {
   // Connect to the Goerli Ethereum Testnet
   const network = hre.network.name;
   console.log("Connected to network:", network);
 
   // Retrieve the deployed contract instance
-  const MyNFTContract = await hre.ethers.getContractFactory("SingersNft");
-  const contractAddress = "0x34afE2CF6DB448a1254D9c3cF4C93794671e2ed1";
+  const MyNFTContract = await hre.ethers.getContractFactory("MyNFTContract");
+  const contractAddress = "0x01023A01527Aae47aBE9F736FE3139f5ACFC2555"; // Replace with your contract address
   const myNFTContract = await MyNFTContract.attach(contractAddress);
-  console.log("Contract address:", contractAddress);
+  console.log("Contract address:", myNFTContract.address);
 
   // Define the IPFS URLs for the NFTs
   const ipfsUrls = [
@@ -22,28 +21,18 @@ async function main() {
   ];
 
   // Batch mint all NFTs
-  const signer = await hre.ethers.provider.getSigner();
-  const contractOwner = await myNFTContract.owner();
   for (let i = 0; i < ipfsUrls.length; i++) {
-    // Check if the caller is the contract owner before minting
-    if (await signer.getAddress() === contractOwner) {
-      const transaction = await myNFTContract.mintNFT(ipfsUrls[i]);
-      const receipt = await transaction.wait();
-      const tokenId = receipt.events[0].args.tokenId;
-      console.log(`Minted NFT with token ID ${tokenId}`);
-    } else {
-      console.log("Only the contract owner can mint NFTs.");
-    }
+    const tx = await myNFTContract.mintNFT(ipfsUrls[i]);
+    const receipt = await tx.wait();
+    const tokenId = receipt.events[0].args.tokenId;
+    console.log(`Minted NFT with token ID ${tokenId}`);
   }
 }
 
-// Immediately invoke the async main function
-(async () => {
-  try {
-    await main();
-    process.exit(0);
-  } catch (error) {
+// Run the script
+main()
+  .then(() => process.exit(0))
+  .catch((error) => {
     console.error(error);
     process.exit(1);
-  }
-})();
+  });

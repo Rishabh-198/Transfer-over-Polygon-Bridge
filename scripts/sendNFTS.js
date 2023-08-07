@@ -1,49 +1,57 @@
 const hre = require("hardhat");
+const { utils } = require("ethers");
 
 async function main() {
+  // Connect with the Mumbai Testnet
+  if (hre.network.name !== "mumbai") {
+    throw new Error("Please run the script on the Mumbai network.");
+  }
   console.log("Connected to network:", hre.network.name);
 
-  const bridgeAddress = "0xF9bc4a80464E48369303196645e876c8C7D972de";
-  const fxPortalAddress = "0x1234567890123456789012345678901234567890"; 
-  const uniqueSingerAddress = "0x34afE2CF6DB448a1254D9c3cF4C93794671e2ed1";
+  const bridgeAddress = "0xF9bc4a80464E48369303196645e876c8C7D972de"; // Address for the bridge
+  const fxRootAddress = "0x1234567890123456789012345678901234567890"; // Address of the FxRoot contract
+  const uniqueSingerAddress = "0x01023A01527Aae47aBE9F736FE3139f5ACFC2555"; // Address of the deployed contract
 
   const UniqueSingerNFT = await hre.ethers.getContractFactory("MyNFTContract");
   const uniqueSingerContract = await UniqueSingerNFT.attach(uniqueSingerAddress);
   console.log("Contract address:", uniqueSingerContract.address);
 
+  // Token IDs of the NFTs you want to send
   const tokenIds = [1, 2, 3, 4, 5];
   const wallet = "0xaf0AFe12e31a59C845064A9ffd6AcB5f073bCb43"; // Wallet address
+  let nftCount = 0; // Store the count of NFTs owned by the wallet
 
-  const overrides = { gasLimit: 1000000 }; // Adjust the gas limit value as needed
+  // Get a signer
+  const signer = await hre.ethers.provider.getSigner();
 
-  // Loop through each token ID and approve, deposit, and withdraw the NFT
+  // Set a higher gas limit for the transactions
+  const overrides = { gasLimit: 2000000, from: signer._address }; // Include the signer's address
+
+  // Approve and deposit each token to the FxRoot Bridge for sending
   for (let i = 0; i < tokenIds.length; i++) {
     const tokenId = tokenIds[i];
     console.log(`Confirm token with token ID ${tokenId} for transfer`);
-    
-    // Approve the FxPortal Bridge 
     await uniqueSingerContract.approve(bridgeAddress, tokenId, overrides);
 
-    // Deposit the NFT to the FxPortal Bridge
-    console.log(`Deposit token with token ID ${tokenId} to the FxPortal`); // FxPortal Bridge
-    await depositToFxPortal(fxPortalAddress, uniqueSingerAddress, tokenId, overrides);
+    console.log(`Deposit token with token ID ${tokenId} to the FxRoot`); // FxRoot Bridge
+    await depositToFxRoot(fxRootAddress, uniqueSingerContract.address, tokenId, wallet, signer, overrides);
 
-    // Withdraw the NFT from the FxPortal Bridge 
-    console.log(`Withdraw token with token ID ${tokenId} from the FxPortal`); // FxPortal Bridge
-    await withdrawFromFxPortal(fxPortalAddress, uniqueSingerAddress, wallet, tokenId, overrides);
+    // Increment the NFT count for each successful transfer
+    nftCount++;
   }
-  
   console.log("Transfer of tokens executed completely");
+  console.log(`Total tokens owned by the wallet (${wallet}):`, nftCount);
+
+  // Print the balance of the wallet (Note: This should be on the Mumbai network)
+  const walletBalance = await hre.ethers.provider.getBalance(wallet);
+  console.log("Balance of wallet", wallet, "is:", walletBalance.toString());
 }
 
-async function depositToFxPortal(fxPortalAddress, tokenContractAddress, tokenId, overrides) {
-  const FxPortal = await hre.ethers.getContractAt("FxPortal", fxPortalAddress);
-  await FxPortal.depositERC721(tokenContractAddress, tokenId, overrides);
-}
-
-async function withdrawFromFxPortal(fxPortalAddress, tokenContractAddress, toAddress, tokenId, overrides) {
-  const FxPortal = await hre.ethers.getContractAt("FxPortal", fxPortalAddress);
-  await FxPortal.withdrawERC721(tokenContractAddress, tokenId, toAddress, overrides);
+async function depositToFxRoot(fxRootAddress, tokenContractAddress, tokenId, toAddress, signer, overrides) {
+  const FxRoot = new hre.ethers.Contract(fxRootAddress, [
+    "function depositERC721(address _token, uint256 _tokenId, address _to) external",
+  ], signer);
+  await FxRoot.depositERC721(tokenContractAddress, tokenId, toAddress, overrides);
 }
 
 main()
