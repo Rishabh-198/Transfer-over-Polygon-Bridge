@@ -16,7 +16,7 @@ async function main() {
   console.log("Contract address:", uniqueSingerContract.address);
 
   // Token IDs of the NFTs you want to send
-  const tokenIds = [1, 2, 3, 4, 5];
+  const tokenIds = [6, 7, 8, 9 , 10];
   const wallet = "0xaf0AFe12e31a59C845064A9ffd6AcB5f073bCb43"; // Wallet address
   let nftCount = 0; // Store the count of NFTs owned by the wallet
 

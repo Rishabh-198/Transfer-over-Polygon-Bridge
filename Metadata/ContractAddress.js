@@ -1,1 +1,5 @@
+<<<<<<< HEAD
 export const nftAddress = "0xdAF0991B4335A6790C2cCdC54DbED7Cb46dAeB00"
+=======
+export const nftAddress = "0x01023A01527Aae47aBE9F736FE3139f5ACFC2555"
+>>>>>>> 208758973aa9e3c4b6052d5390d0ba1981970703
