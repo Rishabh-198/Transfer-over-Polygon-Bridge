@@ -7,7 +7,7 @@ async function main() {
 
   // Retrieve the deployed contract instance
   const MyNFTContract = await hre.ethers.getContractFactory("MyNFTContract");
-  const contractAddress = "0x01023A01527Aae47aBE9F736FE3139f5ACFC2555"; // Replace with your contract address
+  const contractAddress = "0xdAF0991B4335A6790C2cCdC54DbED7Cb46dAeB00"; // Replace with your contract address
   const myNFTContract = await MyNFTContract.attach(contractAddress);
   console.log("Contract address:", myNFTContract.address);
 

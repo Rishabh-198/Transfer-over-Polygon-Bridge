@@ -8,9 +8,8 @@ async function main() {
   }
   console.log("Connected to network:", hre.network.name);
 
-  const bridgeAddress = "0xF9bc4a80464E48369303196645e876c8C7D972de"; // Address for the bridge
-  const fxRootAddress = "0x1234567890123456789012345678901234567890"; // Address of the FxRoot contract
-  const uniqueSingerAddress = "0x01023A01527Aae47aBE9F736FE3139f5ACFC2555"; // Address of the deployed contract
+  const fxRootAddress = "0xF9bc4a80464E48369303196645e876c8C7D972de"; // Address of the fxRoot contract
+  const uniqueSingerAddress = "0xdAF0991B4335A6790C2cCdC54DbED7Cb46dAeB00"; // Address of the deployed NFT contract
 
   const UniqueSingerNFT = await hre.ethers.getContractFactory("MyNFTContract");
   const uniqueSingerContract = await UniqueSingerNFT.attach(uniqueSingerAddress);
@@ -27,13 +26,21 @@ async function main() {
   // Set a higher gas limit for the transactions
   const overrides = { gasLimit: 2000000, from: signer._address }; // Include the signer's address
 
-  // Approve and deposit each token to the FxRoot Bridge for sending
+  // Define the depositToFxRoot function
+  async function depositToFxRoot(fxRootAddress, tokenContractAddress, tokenId, toAddress, signer, overrides) {
+    const FxRoot = new hre.ethers.Contract(fxRootAddress, [
+      "function depositERC721(address _token, uint256 _tokenId, address _to) external",
+    ], signer);
+    await FxRoot.depositERC721(tokenContractAddress, tokenId, toAddress, overrides);
+  }
+
+  // Approve and deposit each token to the fxRoot contract for sending
   for (let i = 0; i < tokenIds.length; i++) {
     const tokenId = tokenIds[i];
     console.log(`Confirm token with token ID ${tokenId} for transfer`);
-    await uniqueSingerContract.approve(bridgeAddress, tokenId, overrides);
+    await uniqueSingerContract.approve(fxRootAddress, tokenId, overrides);
 
-    console.log(`Deposit token with token ID ${tokenId} to the FxRoot`); // FxRoot Bridge
+    console.log(`Deposit token with token ID ${tokenId} to the fxRoot`); // fxRoot contract
     await depositToFxRoot(fxRootAddress, uniqueSingerContract.address, tokenId, wallet, signer, overrides);
 
     // Increment the NFT count for each successful transfer
@@ -45,13 +52,6 @@ async function main() {
   // Print the balance of the wallet (Note: This should be on the Mumbai network)
   const walletBalance = await hre.ethers.provider.getBalance(wallet);
   console.log("Balance of wallet", wallet, "is:", walletBalance.toString());
-}
-
-async function depositToFxRoot(fxRootAddress, tokenContractAddress, tokenId, toAddress, signer, overrides) {
-  const FxRoot = new hre.ethers.Contract(fxRootAddress, [
-    "function depositERC721(address _token, uint256 _tokenId, address _to) external",
-  ], signer);
-  await FxRoot.depositERC721(tokenContractAddress, tokenId, toAddress, overrides);
 }
 
 main()
